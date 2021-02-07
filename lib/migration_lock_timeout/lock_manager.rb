@@ -7,7 +7,11 @@ module MigrationLockTimeout
         MigrationLockTimeout.try(:config).try(:default_timeout)
       if !timeout_disabled && direction == :up && time && !disable_ddl_transaction
         safety_assured? do
-          execute "SET LOCAL lock_timeout = '#{time}s'"
+          if ActiveRecord::Base.connection.adapter_name == 'Mysql2'
+            execute "SET LOCAL lock_wait_timeout = #{time}"
+          else
+            execute "SET LOCAL lock_timeout = '#{time}s'"
+          end
         end
       end
       super
